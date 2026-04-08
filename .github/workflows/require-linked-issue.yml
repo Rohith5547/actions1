@@ -1,0 +1,37 @@
+name: Require Linked Issue
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  check-linked-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for linked issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const query = `query($owner: String!, $repo: String!, $number: Int!) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $number) {
+                  closingIssuesReferences(first: 1) {
+                    nodes { number }
+                  }
+                }
+              }
+            }`;
+
+            const result = await github.graphql(query, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              number: context.payload.pull_request.number
+            });
+
+            const linkedIssues = result.repository.pullRequest.closingIssuesReferences.nodes;
+
+            if (linkedIssues.length === 0) {
+              core.setFailed('This PR must have a linked issue. Use "Closes #123" in the PR description or link an issue in the Development section.');
+            } else {
+              console.log(`Linked to issue #${linkedIssues[0].number}`);
+            }
