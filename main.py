@@ -1,2 +1,2 @@
 print("welcome to helo world")
-print("working on PR draft")
+print("working on trigger events on PR")
